@@ -1,14 +1,16 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod span;
+pub mod diagnostic;
+pub mod token;
+pub mod lexer;
+pub mod ast;
+pub mod parser;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use diagnostic::Diagnostic;
+use ast::Expr;
+use lexer::Lexer;
+use parser::Parser;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub fn parse(input: &str) -> Result<Expr, Diagnostic> {
+    let tokens = Lexer::new(input).tokenize()?;
+    Parser::new(tokens).parse()
 }
