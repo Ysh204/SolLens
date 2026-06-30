@@ -1,5 +1,5 @@
 {
-  "name": "SolLens",
+  "name": "sollens",
   "private": true,
   "scripts": {
     "build": "turbo run build",
