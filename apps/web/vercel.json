@@ -1,4 +1,4 @@
 {
-  "installCommand": "node ../../scripts/vercel-install.mjs",
+  "installCommand": "corepack pnpm install --frozen-lockfile",
   "buildCommand": "node ../../scripts/vercel-build.mjs"
 }
