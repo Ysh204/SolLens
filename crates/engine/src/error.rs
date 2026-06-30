@@ -17,8 +17,8 @@ pub enum EngineError {
     },
     InvalidArgumentType {
         function: String,
-        expected: String,
-        received: String,
+        expected: parser::types::Type,
+        received: parser::types::Type,
         span: Span,
     },
     RuntimeError {

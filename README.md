@@ -1,159 +1,460 @@
-# Turborepo starter
+# SolLens
 
-This Turborepo starter is maintained by the Turborepo core team.
+> **The programmable toolbox for Solana developers.**
 
-## Using this example
+**SolLens** is an interactive development environment and expression language for Solana.
 
-Run the following command:
+Instead of switching between CLI tools, online calculators, explorers, documentation, and one-off Rust scripts, SolLens brings everything into a single developer experience.
 
-```sh
-npx create-turbo@latest
+Write expressions such as:
+
+```text
+sha256("hello")
+
+lamports(1.5)
+
+rent(128)
+
+account_discriminator("Vault")
+
+pda("vault", wallet, program)
 ```
 
-## What's inside?
+and get instant, structured results.
 
-This Turborepo includes the following packages/apps:
+---
 
-### Apps and Packages
+## Vision
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Modern Solana development often requires juggling multiple tools:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+* Solana CLI
+* Anchor CLI
+* Solana Explorer
+* Solscan
+* Base58 converters
+* Rent calculators
+* PDA scripts
+* Rust snippets
+* TypeScript snippets
+* Documentation
 
-### Utilities
+SolLens aims to replace this fragmented workflow with a unified environment built specifically for Solana developers.
 
-This Turborepo has some additional tools already setup for you:
+Think of it as:
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+* **CyberChef** for Solana
+* **Wolfram Alpha** for blockchain developers
+* **Raycast** for Solana engineering
+* **A programmable REPL for Solana**
 
-### Build
+---
 
-To build all apps and packages, run the following command:
+# Features
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Expression Language
 
-```sh
-cd my-turborepo
-turbo build
+Every operation is an expression.
+
+```text
+echo("hello")
+
+upper("solana")
+
+sha256("hello")
+
+lamports(1.5)
+
+rent(128)
 ```
 
-Without global `turbo`, use your package manager:
+Future releases will support:
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
+```text
+pda(...)
+
+ata(...)
+
+account_size(...)
+
+decode(...)
+
+idl(...)
+
+simulate(...)
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Interactive Playground
 
-```sh
-turbo build --filter=docs
+* Monaco-powered editor
+* Syntax highlighting
+* Compiler diagnostics
+* Inline error markers
+* Keyboard-first workflow
+* Instant evaluation
+
+---
+
+## Compiler-Grade Diagnostics
+
+Instead of generic errors:
+
+```text
+Unknown function
 ```
 
-Without global `turbo`:
+SolLens provides contextual diagnostics:
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+```text
+Unknown function: sha25
+
+Did you mean:
+
+sha256
 ```
 
-### Develop
+Errors include:
 
-To develop all apps and packages, run the following command:
+* precise source spans
+* inline editor highlights
+* suggestions
+* structured diagnostics
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo dev
+## Solana Runtime
+
+Current runtime includes:
+
+* SHA-256 hashing
+* SOL ↔ Lamports conversion
+* Rent calculations
+
+Future runtime modules include:
+
+* PDA derivation
+* ATA generation
+* Anchor discriminators
+* SPL Token helpers
+* Borsh encoding
+* IDL parsing
+* Transaction decoding
+* Account inspection
+* Event decoding
+
+---
+
+# Architecture
+
+```text
+               Next.js
+
+                  │
+
+                  ▼
+
+        WebAssembly Bindings
+
+                  │
+
+                  ▼
+
+          Expression Engine
+
+                  │
+
+        ┌─────────┴─────────┐
+
+        ▼                   ▼
+
+     Parser             Registry
+
+        │                   │
+
+        └─────────┬─────────┘
+
+                  ▼
+
+               Runtime
+
+                  │
+
+              Solana APIs
 ```
 
-Without global `turbo`, use your package manager:
+Every feature flows through the same evaluation pipeline.
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
+---
+
+# Why SolLens?
+
+Instead of writing this:
+
+```rust
+let hash = sha256(b"hello");
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+or opening multiple tools...
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+you simply type:
 
-```sh
-turbo dev --filter=web
+```text
+sha256("hello")
 ```
 
-Without global `turbo`:
+and get the result immediately.
 
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+---
+
+# Tech Stack
+
+### Frontend
+
+* Next.js
+* React
+* Monaco Editor
+* Tailwind CSS
+* Turborepo
+* pnpm
+
+### Core Engine
+
+* Rust
+* Pratt Parser
+* Custom AST
+* Expression Evaluator
+* Function Registry
+* Compiler Diagnostics
+
+### Runtime
+
+* Rust
+* rust_decimal
+* sha2
+* Solana SDK *(planned)*
+* Anchor *(planned)*
+
+### Interoperability
+
+* WebAssembly
+* wasm-bindgen
+
+---
+
+# Monorepo Structure
+
+```text
+sollens/
+├── apps/
+│   └── web/
+│
+├── crates/
+│   ├── bindings/
+│   ├── engine/
+│   ├── parser/
+│   └── runtime/
+│
+├── packages/
+│   ├── config/
+│   ├── eslint-config/
+│   ├── typescript-config/
+│   └── ui/
 ```
 
-### Remote Caching
+---
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+# Current Status
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## Implemented
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+* Expression parser
+* Pratt parser foundation
+* AST
+* Runtime registry
+* Compiler diagnostics
+* Monaco integration
+* WebAssembly bindings
+* SHA-256
+* Lamports conversion
+* Rent calculator
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo login
+## Roadmap
+
+### Phase 1 ✅
+
+* Project initialization
+* Monorepo
+* Rust workspace
+* WebAssembly
+* Next.js integration
+
+### Phase 2 ✅
+
+* Pratt parser
+* Expression engine
+* Diagnostics
+* Runtime registry
+* Monaco editor
+
+### Phase 3
+
+* Base58 tools
+* Public key utilities
+* Anchor discriminators
+* ATA calculator
+* PDA derivation
+
+### Phase 4
+
+* Borsh playground
+* IDL explorer
+* Account layout inspector
+* Transaction decoder
+* Event decoder
+
+### Phase 5
+
+* RPC playground
+* Transaction simulator
+* Compute analyzer
+* Workspace support
+* Shareable expressions
+
+### Phase 6
+
+* Plugin system
+* AI debugging assistant
+* VS Code extension
+* CLI
+
+---
+
+# Design Principles
+
+SolLens follows a few core principles:
+
+### Programmable
+
+Everything should be expressible through the language.
+
+---
+
+### Fast
+
+The evaluation engine runs in Rust and compiles to WebAssembly for near-native performance.
+
+---
+
+### Local First
+
+Most functionality runs entirely in your browser.
+
+No backend required.
+
+---
+
+### Extensible
+
+The runtime is designed around function registration, making it easy to add new modules and capabilities.
+
+---
+
+### Developer Experience
+
+Every decision prioritizes developer productivity:
+
+* keyboard-first
+* autocomplete
+* diagnostics
+* discoverability
+* minimal friction
+
+---
+
+# Example
+
+```text
+sha256("hello")
 ```
 
-Without global `turbo`, use your package manager:
+↓
 
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
+```text
+0x2cf24dba5fb0a30e26e83b2ac5b9e29e...
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+---
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
+```text
+lamports(1.5)
 ```
 
-Without global `turbo`:
+↓
 
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
+```text
+1500000000
 ```
 
-## Useful Links
+---
 
-Learn more about the power of Turborepo:
+```text
+rent(128)
+```
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+↓
+
+```text
+1781760
+```
+
+---
+
+# Contributing
+
+Contributions are welcome.
+
+Whether you're interested in:
+
+* parser development
+* Solana runtime features
+* UI/UX
+* documentation
+* testing
+* performance
+* developer tooling
+
+we'd love your help.
+
+Before opening a pull request:
+
+1. Run formatting and linting.
+2. Ensure all tests pass.
+3. Keep changes focused and well documented.
+
+---
+
+# Long-Term Vision
+
+The long-term goal is for SolLens to become the standard developer toolbox for the Solana ecosystem.
+
+Not just another calculator.
+
+Not another explorer.
+
+Not another IDE.
+
+But a programmable environment where developers can inspect, encode, decode, debug, simulate, and understand every aspect of Solana from one place.
+
+---
+
+## License
+
+MIT
+
+---
+
+Built with ❤️ in Rust for the Solana ecosystem.

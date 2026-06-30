@@ -77,4 +77,18 @@ impl Value {
             Value::Object(_) | Value::Null => runtime::RuntimeValue::Null,
         }
     }
+
+    /// Retrieve the Type of this Value.
+    pub fn get_type(&self) -> parser::types::Type {
+        match self {
+            Value::Number(_) => parser::types::Type::Number,
+            Value::Decimal(_) => parser::types::Type::Decimal,
+            Value::Bool(_) => parser::types::Type::Bool,
+            Value::String(_) => parser::types::Type::String,
+            Value::Bytes(_) => parser::types::Type::Bytes,
+            Value::Array(_) => parser::types::Type::Array,
+            Value::Object(_) => parser::types::Type::Object,
+            Value::Null => parser::types::Type::Null,
+        }
+    }
 }
