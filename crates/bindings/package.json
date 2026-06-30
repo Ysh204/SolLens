@@ -1,0 +1,13 @@
+{
+  "name": "@sollens/bindings",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./pkg/bindings.js",
+  "module": "./pkg/bindings.js",
+  "types": "./pkg/bindings.d.ts",
+  "files": ["pkg"],
+  "scripts": {
+    "build": "node ./scripts/build.mjs"
+  }
+}
