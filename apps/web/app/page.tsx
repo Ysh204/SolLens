@@ -37,8 +37,7 @@ export default function Home() {
 
   useEffect(() => {
     import("@sollens/bindings")
-      .then(async (mod) => {
-        await mod.default();
+      .then((mod) => {
         setWasm(mod);
         setIsLoading(false);
       })
