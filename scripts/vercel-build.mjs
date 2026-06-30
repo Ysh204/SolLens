@@ -115,13 +115,18 @@ function ensureWasmPack() {
     env: process.env,
   });
 
-  if (wasmPackCheck.error) {
+  if (wasmPackCheck.error && wasmPackCheck.error.code !== "ENOENT") {
     throw wasmPackCheck.error;
   }
 
-  if (wasmPackCheck.status !== 0) {
+  if (wasmPackCheck.error?.code === "ENOENT" || wasmPackCheck.status !== 0) {
     run("cargo", ["install", "wasm-pack", "--locked", "--version", "0.13.1"]);
+
+    const cargoBin = join(process.env.CARGO_HOME ?? cargoHome, "bin");
+    process.env.PATH = [cargoBin, process.env.PATH ?? ""].join(process.platform === "win32" ? ";" : ":");
   }
+
+  run("wasm-pack", ["--version"]);
 }
 
 ensureRust();
