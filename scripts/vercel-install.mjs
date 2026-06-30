@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const repoRoot = dirname(scriptDir);
 const cargoBin = join(process.env.HOME ?? process.env.USERPROFILE ?? "", ".cargo", "bin");
 const pathEntries = [cargoBin, process.env.PATH ?? ""];
 const env = {
@@ -10,6 +13,7 @@ const env = {
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
+    cwd: repoRoot,
     stdio: "inherit",
     shell: false,
     env,
@@ -30,6 +34,7 @@ run("rustup", ["default", "stable"]);
 run("rustup", ["target", "add", "wasm32-unknown-unknown"]);
 
 const wasmPackCheck = spawnSync("wasm-pack", ["--version"], {
+  cwd: repoRoot,
   stdio: "ignore",
   shell: false,
   env,
