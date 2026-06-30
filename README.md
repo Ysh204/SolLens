@@ -413,30 +413,6 @@ rent(128)
 
 ---
 
-# Contributing
-
-Contributions are welcome.
-
-Whether you're interested in:
-
-* parser development
-* Solana runtime features
-* UI/UX
-* documentation
-* testing
-* performance
-* developer tooling
-
-we'd love your help.
-
-Before opening a pull request:
-
-1. Run formatting and linting.
-2. Ensure all tests pass.
-3. Keep changes focused and well documented.
-
----
-
 # Long-Term Vision
 
 The long-term goal is for SolLens to become the standard developer toolbox for the Solana ecosystem.
@@ -451,10 +427,12 @@ But a programmable environment where developers can inspect, encode, decode, deb
 
 ---
 
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guide](CONTRIBUTING.md) before opening an issue or pull request.
+
+If you have an idea for a new feature, bug fix, or improvement, feel free to open an issue first so we can discuss it.
+
 ## License
 
-MIT
-
----
-
-Built with ❤️ in Rust for the Solana ecosystem.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

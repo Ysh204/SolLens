@@ -39,3 +39,10 @@ yarn-error.log*
 
 # Rust
 target/
+
+# WASM
+pkg
+
+# IDE
+.vscode
+.idea
