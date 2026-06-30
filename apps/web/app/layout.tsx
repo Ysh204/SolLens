@@ -5,21 +5,36 @@ import "./globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "SolLens - Solana Development Suite",
-  description: "The expression engine and development suite for Solana developers.",
+  title: "SolLens",
+  description:
+    "A modern expression engine and development toolkit for Solana developers.",
+  keywords: [
+    "Solana",
+    "Rust",
+    "Web3",
+    "Compiler",
+    "Expression Engine",
+    "Developer Tools",
+  ],
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body className={inter.variable}>
+    <html lang="en" suppressHydrationWarning>
+      {/* Add suppressHydrationWarning here to tell Next.js to ignore browser extension injections */}
+      <body className={inter.variable} suppressHydrationWarning>
+        <div className="background-grid" />
+        <div className="background-glow glow-one" />
+        <div className="background-glow glow-two" />
+
         {children}
       </body>
     </html>
