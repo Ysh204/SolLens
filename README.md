@@ -6,6 +6,10 @@
 
 Instead of switching between CLI tools, online calculators, explorers, documentation, and one-off Rust scripts, SolLens brings everything into a single developer experience.
 
+## Demo
+
+![image](./assets/images/image.png)
+
 Write expressions such as:
 
 ```text
