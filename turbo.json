@@ -4,7 +4,14 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "../../crates/**/*.rs",
+        "../../crates/**/*.toml",
+        "../../Cargo.lock",
+        "../../Cargo.toml"
+      ],
       "outputs": [".next/**", "pkg/**", "!.next/cache/**", "!.next/dev/**"]
     },
     "lint": {
