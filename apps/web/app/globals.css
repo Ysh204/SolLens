@@ -447,6 +447,10 @@ body {
   margin-bottom: 2px;
 }
 
+.example-row--featured .row-label {
+  color: var(--accent-gold-bright);
+}
+
 .example-row {
   display: flex;
   align-items: center;
