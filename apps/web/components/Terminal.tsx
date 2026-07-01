@@ -18,7 +18,7 @@ const BOOT_LINES: TerminalLine[] = [
     id: "boot-welcome",
     type: "system",
     content:
-      "Universal Expression Engine — powered by Rust WASM.\nPick an example below or type an expression, then press Run.",
+      "Universal Expression Engine — Base58, Pubkey & Anchor discriminators.\nPick an example below, edit values, then press Run.",
   },
 ];
 
@@ -36,13 +36,14 @@ function handleBuiltinCommand(cmd: string): string | null {
   if (trimmed === "help") return HELP_TEXT;
   if (trimmed === "clear") return "__CLEAR__";
   if (trimmed === "about") {
-    return `SolLens v1.0.0 — Phase 2 Expression Engine
+    return `SolLens v1.0.0 — Phase 3 Solana Primitives
 
-Parser:  Pratt parser, lexer, AST, source spans
-Runtime: echo, upper, sha256, lamports, rent
-Math:    +  -  *  /  with nesting and composition
+Base58:  encode, decode, is_base58, bytes_to_base58
+Pubkey:  pubkey, is_on_curve, bytes, pubkey_from_bytes
+Anchor:  account_discriminator, instruction_discriminator
 
-Try: lamports(1.5) * 2  or  rent(128) + 5000`;
+Try: account_discriminator("Vault")
+     base58_encode("hello")`;
   }
 
   return null;

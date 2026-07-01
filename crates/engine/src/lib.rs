@@ -72,4 +72,50 @@ mod tests {
         let result = evaluate(r#""hello world""#).unwrap();
         assert_eq!(result.to_string(), "hello world");
     }
+
+    #[test]
+    fn base58_encode_string() {
+        let result = evaluate(r#"base58_encode("hello")"#).unwrap();
+        assert_eq!(result.to_string(), "Cn8eVZg");
+    }
+
+    #[test]
+    fn base58_decode_roundtrip() {
+        let result = evaluate(r#"base58_decode("Cn8eVZg")"#).unwrap();
+        assert_eq!(result.to_string(), "0x68656c6c6f");
+    }
+
+    #[test]
+    fn is_base58_valid() {
+        let result = evaluate(r#"is_base58("Cn8eVZg")"#).unwrap();
+        assert_eq!(result.to_string(), "true");
+    }
+
+    #[test]
+    fn pubkey_system_program() {
+        let result = evaluate(r#"pubkey("11111111111111111111111111111111")"#).unwrap();
+        assert_eq!(result.to_string(), "11111111111111111111111111111111");
+    }
+
+    #[test]
+    fn is_on_curve_system_program() {
+        let result = evaluate(r#"is_on_curve("11111111111111111111111111111111")"#).unwrap();
+        assert_eq!(result.to_string(), "true");
+    }
+
+    #[test]
+    fn account_discriminator_vault() {
+        use sha2::{Digest, Sha256};
+        let result = evaluate(r#"account_discriminator("Vault")"#).unwrap();
+        let expected = format!("0x{}", hex::encode(&Sha256::digest(b"account:Vault")[..8]));
+        assert_eq!(result.to_string(), expected);
+    }
+
+    #[test]
+    fn instruction_discriminator_initialize() {
+        use sha2::{Digest, Sha256};
+        let result = evaluate(r#"instruction_discriminator("initialize")"#).unwrap();
+        let expected = format!("0x{}", hex::encode(&Sha256::digest(b"global:initialize")[..8]));
+        assert_eq!(result.to_string(), expected);
+    }
 }

@@ -12,7 +12,10 @@ export function ExpressionExamples({ onSelect, disabled }: ExpressionExamplesPro
         Click an example to fill the command line — edit values, then Run.
       </p>
       {EXPRESSION_GROUPS.map((group) => (
-        <div key={group.label} className="example-row">
+        <div
+          key={group.label}
+          className={`example-row ${["Base58", "Pubkey", "Anchor"].includes(group.label) ? "example-row--featured" : ""}`}
+        >
           <span className="row-label">{group.label}</span>
           <div className="example-buttons">
             {group.examples.map((ex) => (
