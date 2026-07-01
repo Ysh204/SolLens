@@ -20,7 +20,6 @@ coverage
 
 # Vercel
 .vercel
-.vercel-rust-env.json
 
 # Build Outputs
 .next/
