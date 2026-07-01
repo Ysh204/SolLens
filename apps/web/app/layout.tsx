@@ -1,12 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "SolLens",
@@ -30,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       {/* Add suppressHydrationWarning here to tell Next.js to ignore browser extension injections */}
-      <body className={inter.variable} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <div className="background-grid" />
         <div className="background-glow glow-one" />
         <div className="background-glow glow-two" />
