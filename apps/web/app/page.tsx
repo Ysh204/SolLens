@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Editor, { Monaco } from "@monaco-editor/react";
+import Image from "next/image";
+import icon from "./icon.png";
 
 interface Span {
   start: number;
@@ -155,6 +157,7 @@ export default function Home() {
     <main className="app">
       <header className="header">
         <div className="logo">
+          <Image src={icon} alt="SolLens Logo" width={48} height={48} />
           <h1>SolLens</h1>
         </div>
 

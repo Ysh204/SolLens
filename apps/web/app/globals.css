@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-main: #0c0c0e;
-  --bg-card: #131316;
-  --bg-input: #09090b;
-  --border: rgba(255, 255, 255, 0.06);
+  --bg-main: #0a0a0c;
+  --bg-card: #111114;
+  --bg-input: #070709;
+  --border: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(139, 92, 246, 0.4);
-  --text-primary: #fafafa;
+  --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
   --muted: #52525b;
   --accent-purple: #8b5cf6;
@@ -58,7 +58,7 @@ body {
   left: -12%;
   width: 450px;
   height: 450px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
 }
 
 /* Muted cool teal on the right edge */
@@ -67,7 +67,7 @@ body {
   right: -12%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(20, 184, 166, 0.07) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.1) 0%, transparent 70%);
 }
 
 /* Subtle, toned-down cosmic ambient glows from watermarked_img_5739358825174474891.png */
@@ -78,7 +78,7 @@ body::before {
   left: -10%;
   width: 450px;
   height: 450px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, transparent 70%);
   filter: blur(60px);
   pointer-events: none;
   z-index: 0;
@@ -91,7 +91,7 @@ body::after {
   right: -10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(20, 184, 166, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%);
   filter: blur(60px);
   pointer-events: none;
   z-index: 0;
@@ -118,13 +118,20 @@ body::after {
   margin-bottom: 32px;
 }
 
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .logo h1 {
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  background: linear-gradient(180deg, #fff 0%, #a1a1aa 100%);
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  background: linear-gradient(180deg, #ffffff 30%, #a1a1aa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(255, 255, 255, 0.15));
 }
 
 .header-right {
