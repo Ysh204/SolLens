@@ -74,14 +74,3 @@ export function hexDump(bytes: Uint8Array, bytesPerLine = 16): HexDumpLine[] {
   }
   return lines;
 }
-
-export async function sha256(input: string): Promise<Uint8Array> {
-  const data = new TextEncoder().encode(input);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return new Uint8Array(hash);
-}
-
-export async function anchorDiscriminator(namespace: string, name: string): Promise<Uint8Array> {
-  const hash = await sha256(`${namespace}:${name}`);
-  return hash.slice(0, 8);
-}

@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "predev": "pnpm --filter @sollens/bindings build",
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",

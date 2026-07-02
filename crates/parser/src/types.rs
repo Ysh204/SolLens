@@ -11,6 +11,15 @@ pub enum Type {
     Array,
     Object,
     Null,
+    // Solana domain types
+    Pubkey,
+    Signature,
+    Address,
+    Account,
+    Transaction,
+    Instruction,
+    Event,
+    Idl,
 }
 
 impl fmt::Display for Type {
@@ -24,6 +33,14 @@ impl fmt::Display for Type {
             Type::Array => write!(f, "Array"),
             Type::Object => write!(f, "Object"),
             Type::Null => write!(f, "Null"),
+            Type::Pubkey => write!(f, "Pubkey"),
+            Type::Signature => write!(f, "Signature"),
+            Type::Address => write!(f, "Address"),
+            Type::Account => write!(f, "Account"),
+            Type::Transaction => write!(f, "Transaction"),
+            Type::Instruction => write!(f, "Instruction"),
+            Type::Event => write!(f, "Event"),
+            Type::Idl => write!(f, "Idl"),
         }
     }
 }

@@ -1,9 +1,9 @@
 use rust_decimal::Decimal;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "value")]
 pub enum Value {
     Number(u64),
@@ -13,6 +13,8 @@ pub enum Value {
     Bytes(Vec<u8>),
     Array(Vec<Value>),
     Object(HashMap<String, Value>),
+    Pubkey(String),
+    Signature(String),
     Null,
 }
 
@@ -23,13 +25,14 @@ impl fmt::Display for Value {
             Value::Decimal(d) => write!(f, "{}", d),
             Value::Bool(b) => write!(f, "{}", b),
             Value::String(s) => write!(f, "{}", s),
-            Value::Bytes(b) => {
-                write!(f, "0x{}", hex::encode(b))
-            }
+            Value::Pubkey(s) | Value::Signature(s) => write!(f, "{}", s),
+            Value::Bytes(b) => write!(f, "0x{}", hex::encode(b)),
             Value::Array(arr) => {
                 write!(f, "[")?;
                 for (i, v) in arr.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{}", v)?;
                 }
                 write!(f, "]")
@@ -37,7 +40,9 @@ impl fmt::Display for Value {
             Value::Object(map) => {
                 write!(f, "{{")?;
                 for (i, (k, v)) in map.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "\"{}\": {}", k, v)?;
                 }
                 write!(f, "}}")
@@ -48,7 +53,6 @@ impl fmt::Display for Value {
 }
 
 impl Value {
-    /// Convert from a runtime::RuntimeValue into an engine::Value.
     pub fn from_runtime(rv: runtime::RuntimeValue) -> Self {
         match rv {
             runtime::RuntimeValue::Number(n) => Value::Number(n),
@@ -59,11 +63,17 @@ impl Value {
             runtime::RuntimeValue::Array(arr) => {
                 Value::Array(arr.into_iter().map(Value::from_runtime).collect())
             }
+            runtime::RuntimeValue::Object(map) => Value::Object(
+                map.into_iter()
+                    .map(|(k, v)| (k, Value::from_runtime(v)))
+                    .collect(),
+            ),
+            runtime::RuntimeValue::Pubkey(s) => Value::Pubkey(s),
+            runtime::RuntimeValue::Signature(s) => Value::Signature(s),
             runtime::RuntimeValue::Null => Value::Null,
         }
     }
 
-    /// Convert an engine::Value into a runtime::RuntimeValue.
     pub fn into_runtime(self) -> runtime::RuntimeValue {
         match self {
             Value::Number(n) => runtime::RuntimeValue::Number(n),
@@ -71,14 +81,20 @@ impl Value {
             Value::Bool(b) => runtime::RuntimeValue::Bool(b),
             Value::String(s) => runtime::RuntimeValue::String(s),
             Value::Bytes(b) => runtime::RuntimeValue::Bytes(b),
-            Value::Array(arr) => {
-                runtime::RuntimeValue::Array(arr.into_iter().map(Value::into_runtime).collect())
-            }
-            Value::Object(_) | Value::Null => runtime::RuntimeValue::Null,
+            Value::Array(arr) => runtime::RuntimeValue::Array(
+                arr.into_iter().map(Value::into_runtime).collect(),
+            ),
+            Value::Object(map) => runtime::RuntimeValue::Object(
+                map.into_iter()
+                    .map(|(k, v)| (k, v.into_runtime()))
+                    .collect(),
+            ),
+            Value::Pubkey(s) => runtime::RuntimeValue::Pubkey(s),
+            Value::Signature(s) => runtime::RuntimeValue::Signature(s),
+            Value::Null => runtime::RuntimeValue::Null,
         }
     }
 
-    /// Retrieve the Type of this Value.
     pub fn get_type(&self) -> parser::types::Type {
         match self {
             Value::Number(_) => parser::types::Type::Number,
@@ -88,6 +104,8 @@ impl Value {
             Value::Bytes(_) => parser::types::Type::Bytes,
             Value::Array(_) => parser::types::Type::Array,
             Value::Object(_) => parser::types::Type::Object,
+            Value::Pubkey(_) => parser::types::Type::Pubkey,
+            Value::Signature(_) => parser::types::Type::Signature,
             Value::Null => parser::types::Type::Null,
         }
     }

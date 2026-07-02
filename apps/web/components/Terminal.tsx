@@ -36,14 +36,16 @@ function handleBuiltinCommand(cmd: string): string | null {
   if (trimmed === "help") return HELP_TEXT;
   if (trimmed === "clear") return "__CLEAR__";
   if (trimmed === "about") {
-    return `SolLens v1.0.0 — Phase 3 Solana Primitives
+    return `SolLens v1.0.0 — Solana Developer Platform
 
 Base58:  encode, decode, is_base58, bytes_to_base58
 Pubkey:  pubkey, is_on_curve, bytes, pubkey_from_bytes
 Anchor:  account_discriminator, instruction_discriminator
+Solana:  pda, ata, lamports, rent
+Decode:  decode_account, decode_instruction, decode_events, decode, hex_dump
 
-Try: account_discriminator("Vault")
-     base58_encode("hello")`;
+Try: pda(["vault"], "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").bump
+     decode_instruction("0xa9059cbb0000000000000000000000000000000000000000000000000000000000000064")`;
   }
 
   return null;
@@ -54,7 +56,7 @@ interface TerminalProps {
 }
 
 export function Terminal({ isActive }: TerminalProps) {
-  const { evaluate, isReady, isLoading, loadError } = useWasm();
+  const { evaluate, evaluateAsync, isReady, isLoading, loadError } = useWasm();
   const [lines, setLines] = useState<TerminalLine[]>(BOOT_LINES);
   const [input, setInput] = useState("");
   const [history, setHistory] = useState<string[]>([]);
@@ -80,7 +82,7 @@ export function Terminal({ isActive }: TerminalProps) {
   }, [isActive]);
 
   const appendEvaluation = useCallback(
-    (cmd: string, opts?: { echoInput?: boolean }) => {
+    async (cmd: string, opts?: { echoInput?: boolean }) => {
       const trimmed = cmd.trim();
       if (!trimmed) return;
 
@@ -100,19 +102,39 @@ export function Terminal({ isActive }: TerminalProps) {
         return;
       }
 
-      const { result, error } = evaluate(trimmed);
-      if (error) {
-        const errMsg = error.help
-          ? `${error.message}\n\nSuggestion: ${error.help}`
-          : error.message;
-        newLines.push(createLine("error", errMsg));
-      } else if (result) {
-        newLines.push(createLine("output", formatResult(result)));
-      }
+      const hasTx = /transaction\s*\(\s*["']([^"']+)["']\s*\)/.test(trimmed);
+      if (hasTx) {
+        const loadingLine = createLine("system", "Fetching transaction details from RPC...");
+        setLines((prev) => [...prev, ...newLines, loadingLine]);
 
-      setLines((prev) => [...prev, ...newLines]);
+        const { result, error } = await evaluateAsync(trimmed);
+        setLines((prev) => {
+          const filtered = prev.filter((l) => l.id !== loadingLine.id);
+          const finalLines: TerminalLine[] = [];
+          if (error) {
+            const errMsg = error.help
+              ? `${error.message}\n\nSuggestion: ${error.help}`
+              : error.message;
+            finalLines.push(createLine("error", errMsg));
+          } else if (result) {
+            finalLines.push(createLine("output", formatResult(result)));
+          }
+          return [...filtered, ...finalLines];
+        });
+      } else {
+        const { result, error } = evaluate(trimmed);
+        if (error) {
+          const errMsg = error.help
+            ? `${error.message}\n\nSuggestion: ${error.help}`
+            : error.message;
+          newLines.push(createLine("error", errMsg));
+        } else if (result) {
+          newLines.push(createLine("output", formatResult(result)));
+        }
+        setLines((prev) => [...prev, ...newLines]);
+      }
     },
-    [evaluate],
+    [evaluate, evaluateAsync],
   );
 
   const runCommand = useCallback(

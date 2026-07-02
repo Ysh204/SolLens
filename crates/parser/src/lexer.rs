@@ -64,7 +64,10 @@ impl<'a> Lexer<'a> {
         match c {
             '(' => Ok(Token::new(TokenKind::LParen, Span::new(idx, idx + 1))),
             ')' => Ok(Token::new(TokenKind::RParen, Span::new(idx, idx + 1))),
+            '[' => Ok(Token::new(TokenKind::LBracket, Span::new(idx, idx + 1))),
+            ']' => Ok(Token::new(TokenKind::RBracket, Span::new(idx, idx + 1))),
             ',' => Ok(Token::new(TokenKind::Comma, Span::new(idx, idx + 1))),
+            '.' => Ok(Token::new(TokenKind::Dot, Span::new(idx, idx + 1))),
             '+' => Ok(Token::new(TokenKind::Plus, Span::new(idx, idx + 1))),
             '-' => Ok(Token::new(TokenKind::Minus, Span::new(idx, idx + 1))),
             '*' => Ok(Token::new(TokenKind::Star, Span::new(idx, idx + 1))),
@@ -153,4 +156,16 @@ fn is_ident_start(c: char) -> bool {
 
 fn is_ident_char(c: char) -> bool {
     c.is_alphanumeric() || c == '_' || c == '$'
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn brackets_emit_bracket_tokens() {
+        let tokens = Lexer::new("[]").tokenize().unwrap();
+        assert_eq!(tokens[0].kind, TokenKind::LBracket);
+        assert_eq!(tokens[1].kind, TokenKind::RBracket);
+    }
 }

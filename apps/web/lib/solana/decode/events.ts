@@ -1,4 +1,6 @@
-import { bytesToHex, anchorDiscriminator } from "../bytes";
+import type { SuccessValue } from "../../types";
+import { unwrapArray, unwrapNumber, unwrapObject, unwrapString } from "../../engine/values";
+import { buildDecodeEventsExpression, discriminatorFromEngine } from "./engine";
 
 export interface DecodedEvent {
   index: number;
@@ -19,83 +21,61 @@ export interface EventDecodeResult {
   programDataLines: number;
 }
 
-const KNOWN_EVENTS = [
-  "DepositEvent",
-  "WithdrawEvent",
-  "SwapEvent",
-  "TransferEvent",
-  "InitializeEvent",
-  "CloseEvent",
-  "UpdateEvent",
-  "MintEvent",
-  "BurnEvent",
-];
-
-const PROGRAM_DATA_RE = /^Program data: (.+)$/;
-const PROGRAM_LOG_RE = /^Program ([1-9A-HJ-NP-Za-km-z]{32,44}) invoke \[(\d+)\]/;
-
-async function matchEventDiscriminator(disc: Uint8Array): Promise<string | undefined> {
-  for (const name of KNOWN_EVENTS) {
-    const expected = await anchorDiscriminator("event", name);
-    if (expected.every((b, i) => b === disc[i])) return name;
+function pickField(obj: Record<string, SuccessValue>, ...names: string[]): SuccessValue {
+  for (const name of names) {
+    const value = obj[name];
+    if (value !== undefined) return value;
   }
-  return undefined;
+  throw new Error(`Event decode result is missing fields: ${names.join(" / ")}`);
 }
 
-function base64ToBytes(b64: string): Uint8Array {
-  return Uint8Array.from(atob(b64.trim()), (c) => c.charCodeAt(0));
-}
-
-export async function decodeEventLogs(input: string): Promise<EventDecodeResult> {
-  const lines = input.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const events: DecodedEvent[] = [];
-  let programDataLines = 0;
-  let currentProgram: string | undefined;
-
-  for (const line of lines) {
-    const invokeMatch = line.match(PROGRAM_LOG_RE);
-    if (invokeMatch?.[1]) {
-      currentProgram = invokeMatch[1];
-    }
-
-    const dataMatch = line.match(PROGRAM_DATA_RE);
-    if (!dataMatch?.[1]) continue;
-
-    programDataLines++;
-    const rawBase64 = dataMatch[1];
-    let bytes: Uint8Array;
-    try {
-      bytes = base64ToBytes(rawBase64);
-    } catch {
-      continue;
-    }
-
-    const event: DecodedEvent = {
-      index: events.length,
-      program: currentProgram,
-      rawBase64,
-      hex: bytesToHex(bytes),
-      logLine: line,
+function eventResultFromEngine(result: SuccessValue): EventDecodeResult {
+  const obj = unwrapObject(result);
+  const events = unwrapArray(pickField(obj, "events")).map((eventVal) => {
+    const event = unwrapObject(eventVal);
+    const decoded: DecodedEvent = {
+      index: unwrapNumber(pickField(event, "index")),
+      rawBase64: unwrapString(pickField(event, "raw_base64", "rawBase64")),
+      hex: unwrapString(pickField(event, "hex")),
+      logLine: unwrapString(pickField(event, "log_line", "logLine")),
     };
 
-    if (bytes.length >= 8) {
-      const disc = bytes.slice(0, 8);
-      const data = bytes.slice(8);
-      event.discriminator = {
-        hex: bytesToHex(disc),
-        possibleEvent: await matchEventDiscriminator(disc),
-      };
-      event.dataHex = bytesToHex(data);
+    const program = event.program;
+    if (program) {
+      decoded.program = unwrapString(program);
     }
 
-    events.push(event);
-  }
+    if (event.discriminator) {
+      const disc = discriminatorFromEngine(event.discriminator);
+      decoded.discriminator = {
+        hex: disc.hex,
+        possibleEvent: disc.possibleEvent,
+      };
+    }
+
+    const dataHex = event.data_hex ?? event.dataHex;
+    if (dataHex) {
+      decoded.dataHex = unwrapString(dataHex);
+    }
+
+    return decoded;
+  });
 
   return {
     events,
-    totalLogLines: lines.length,
-    programDataLines,
+    totalLogLines: unwrapNumber(pickField(obj, "total_log_lines", "totalLogLines")),
+    programDataLines: unwrapNumber(pickField(obj, "program_data_lines", "programDataLines")),
   };
+}
+
+export async function decodeEventLogs(input: string): Promise<EventDecodeResult> {
+  const { getEngineClient, evaluateWithClient } = await import("../../engine/client");
+  const client = await getEngineClient();
+  const expr = buildDecodeEventsExpression(input);
+  const { result, error } = evaluateWithClient(client, expr);
+  if (error) throw new Error(error.message);
+  if (!result) throw new Error("No result from engine");
+  return eventResultFromEngine(result);
 }
 
 export const EXAMPLE_EVENT_LOGS = `Program 11111111111111111111111111111111 invoke [1]

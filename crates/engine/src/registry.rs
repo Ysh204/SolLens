@@ -1,73 +1,90 @@
 use std::collections::HashMap;
-use crate::value::Value;
-use crate::error::EngineError;
-use parser::span::Span;
-use runtime::RuntimeValue;
 
-/// The type of function stored in the registry.
-/// Takes a list of evaluated Values and returns a Value or an error string.
-type NativeFunction = fn(Vec<RuntimeValue>) -> Result<RuntimeValue, String>;
+use parser::span::Span;
+use runtime::{FunctionRegistry, RuntimeValue};
+
+use crate::error::EngineError;
+use crate::value::Value;
+
+type BuiltinFunction = fn(Vec<RuntimeValue>) -> Result<RuntimeValue, String>;
 
 pub struct Registry {
-    functions: HashMap<String, NativeFunction>,
+    builtins: HashMap<String, BuiltinFunction>,
+    runtime: FunctionRegistry,
 }
 
 impl Registry {
     pub fn new() -> Self {
         let mut reg = Self {
-            functions: HashMap::new(),
+            builtins: HashMap::new(),
+            runtime: FunctionRegistry::default(),
         };
-        reg.register_builtins();
+        reg.builtins.insert("echo".to_string(), builtin_echo);
+        reg.builtins.insert("upper".to_string(), builtin_upper);
+        reg.builtins.insert("transaction".to_string(), builtin_transaction);
         reg
     }
 
-    /// Register a single function by name.
-    pub fn register(&mut self, name: &str, f: NativeFunction) {
-        self.functions.insert(name.to_string(), f);
-    }
-
-    /// Look up a function by name. Returns an error with suggestions if not found.
-    pub fn get(&self, name: &str, span: Span) -> Result<&NativeFunction, EngineError> {
-        match self.functions.get(name) {
-            Some(f) => Ok(f),
-            None => {
-                let suggestions = self.suggest(name);
-                Err(EngineError::UnknownFunction {
-                    name: name.to_string(),
-                    span,
-                    suggestions,
-                })
-            }
-        }
-    }
-
-    /// Call a registered function with evaluated argument Values.
     pub fn call(&self, name: &str, args: Vec<Value>, span: Span) -> Result<Value, EngineError> {
-        let f = self.get(name, span)?;
+        let runtime_args: Vec<RuntimeValue> = args.into_iter().map(|v| v.into_runtime()).collect();
 
-        let runtime_args: Vec<RuntimeValue> = args
-            .into_iter()
-            .map(|v| v.into_runtime())
-            .collect();
-
-        match f(runtime_args) {
-            Ok(rv) => Ok(Value::from_runtime(rv)),
-            Err(msg) => Err(EngineError::RuntimeError {
-                message: msg,
-                span,
-            }),
+        if let Some(f) = self.builtins.get(name) {
+            return match f(runtime_args) {
+                Ok(rv) => Ok(Value::from_runtime(rv)),
+                Err(msg) => Err(EngineError::RuntimeError { message: msg, span }),
+            };
         }
+
+        if let Some(f) = self.runtime.get(name) {
+            return match f(runtime_args) {
+                Ok(rv) => Ok(Value::from_runtime(rv)),
+                Err(msg) => Err(EngineError::RuntimeError { message: msg, span }),
+            };
+        }
+
+        let suggestions = self.suggest(name);
+        Err(EngineError::UnknownFunction {
+            name: name.to_string(),
+            span,
+            suggestions,
+        })
     }
 
-    /// Provide "did you mean" suggestions via edit distance.
+    pub fn function_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self.runtime.function_names();
+        names.push("echo".to_string());
+        names.push("upper".to_string());
+        names.push("transaction".to_string());
+        names.sort();
+        names.dedup();
+        names
+    }
+
+    pub fn function_catalog(&self) -> Vec<runtime::registry::FunctionMetadata> {
+        let mut catalog = self.runtime.all_metadata();
+        catalog.push(runtime::registry::meta(
+            "transaction",
+            "Fetch and decode a Solana transaction by its signature from RPC.",
+            "Solana",
+            vec![runtime::registry::param(
+                "signature",
+                parser::types::Type::Signature,
+                "Transaction signature (base58)",
+            )],
+            parser::types::Type::Object,
+            vec![r#"transaction("5VERv8NMvzbJMEkJfz…")"#],
+        ));
+        catalog
+    }
+
     fn suggest(&self, name: &str) -> Vec<String> {
         let mut candidates: Vec<(String, usize)> = self
-            .functions
-            .keys()
+            .function_names()
+            .into_iter()
             .filter_map(|key| {
-                let dist = edit_distance(name, key);
+                let dist = edit_distance(name, &key);
                 if dist <= 3 {
-                    Some((key.clone(), dist))
+                    Some((key, dist))
                 } else {
                     None
                 }
@@ -77,27 +94,7 @@ impl Registry {
         candidates.sort_by_key(|(_, d)| *d);
         candidates.into_iter().take(3).map(|(k, _)| k).collect()
     }
-
-    /// Register engine-native utility functions.
-    fn register_builtins(&mut self) {
-        self.register("echo", builtin_echo);
-        self.register("upper", builtin_upper);
-
-        // Register runtime (Solana) functions via the pluggable hook.
-        runtime::solana::register_functions(|name, f| {
-            self.register(name, f);
-        });
-    }
-
-    /// Returns a sorted list of all registered function names.
-    pub fn function_names(&self) -> Vec<String> {
-        let mut names: Vec<String> = self.functions.keys().cloned().collect();
-        names.sort();
-        names
-    }
 }
-
-// ── Built-in functions ──────────────────────────────────────────────────────
 
 fn builtin_echo(args: Vec<RuntimeValue>) -> Result<RuntimeValue, String> {
     if args.len() != 1 {
@@ -116,7 +113,23 @@ fn builtin_upper(args: Vec<RuntimeValue>) -> Result<RuntimeValue, String> {
     }
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+fn builtin_transaction(args: Vec<RuntimeValue>) -> Result<RuntimeValue, String> {
+    if args.len() != 1 {
+        return Err(format!("transaction expects exactly 1 argument, got {}", args.len()));
+    }
+    let sig = match &args[0] {
+        RuntimeValue::String(s) | RuntimeValue::Signature(s) => s.clone(),
+        _ => return Err("transaction expects a Signature or String argument".to_string()),
+    };
+
+    match crate::engine::get_transaction_data(&sig) {
+        Some(val) => Ok(val.into_runtime()),
+        None => Err(format!(
+            "Transaction '{}' not found in cache. Make sure it is fetched first.",
+            sig
+        )),
+    }
+}
 
 fn edit_distance(a: &str, b: &str) -> usize {
     let a_len = a.len();

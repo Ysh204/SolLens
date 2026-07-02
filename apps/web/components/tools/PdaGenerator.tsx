@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { derivePda, type PdaResult } from "../../lib/solana/pda";
+import { useWasm } from "../../hooks/useWasm";
+import { buildPdaExpression, derivePdaFromEngine, type PdaResult } from "../../lib/solana/pda";
 import { bytesToHex } from "../../lib/solana/bytes";
 import {
   DecodeButton,
@@ -18,20 +19,30 @@ const EXAMPLE_SEEDS = '["vault", "11111111111111111111111111111111"]';
 const EXAMPLE_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 export function PdaGenerator() {
+  const { evaluate, isReady, loadError } = useWasm();
   const [seeds, setSeeds] = useState(EXAMPLE_SEEDS);
   const [programId, setProgramId] = useState(EXAMPLE_PROGRAM);
   const [result, setResult] = useState<PdaResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const expressionPreview = useMemo(
-    () => `pda(${seeds.trim() || "[]"}, ${programId.trim() || "program"})`,
+    () => buildPdaExpression(seeds, programId || "program"),
     [seeds, programId],
   );
 
   function handleDerive() {
     setError(null);
+    if (!isReady) {
+      setError(loadError ?? "Engine not ready");
+      return;
+    }
     try {
-      setResult(derivePda(seeds, programId));
+      setResult(derivePdaFromEngine((expr) => {
+        const { result, error: evalError } = evaluate(expr);
+        if (evalError) throw new Error(evalError.message);
+        if (!result) throw new Error("No result from engine");
+        return result;
+      }, seeds, programId));
     } catch (err) {
       setResult(null);
       setError(err instanceof Error ? err.message : "Failed to derive PDA");
@@ -42,7 +53,7 @@ export function PdaGenerator() {
     <ToolPanel
       moduleTag="Module · PDA Generator"
       title="Program Derived Address"
-      description='Derive PDAs from seeds and a program ID — pda(["vault", wallet], program)'
+      description='Derive PDAs from seeds and a program ID — pda(["vault"], "program")'
     >
       <div className="tool-grid tool-grid--2col">
         <ToolSection title="Input">
