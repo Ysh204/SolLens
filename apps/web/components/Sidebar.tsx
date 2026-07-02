@@ -7,6 +7,8 @@ interface SidebarProps {
   onSelect: (id: ModuleId) => void;
 }
 
+const LIVE_MODULES: ModuleId[] = ["terminal", "pda-generator", "spl-token", "data-decoder"];
+
 export function Sidebar({ activeModule, onSelect }: SidebarProps) {
   return (
     <aside className="sidebar">
@@ -22,7 +24,7 @@ export function Sidebar({ activeModule, onSelect }: SidebarProps) {
             >
               <NavIcon name={item.icon} className="nav-icon" size={16} />
               <span>{item.label}</span>
-              {item.id === "terminal" && (
+              {LIVE_MODULES.includes(item.id) && (
                 <span className="nav-live-badge">Live</span>
               )}
             </button>

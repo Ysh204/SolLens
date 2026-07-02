@@ -15,40 +15,16 @@ export interface ToolItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: "terminal", label: "Expression Engine", icon: "terminal" },
+  { id: "pda-generator", label: "PDA Generator", icon: "key" },
+  { id: "spl-token", label: "ATA Generator", icon: "coin" },
+  { id: "data-decoder", label: "Data Playground", icon: "code" },
   { id: "address-lookup", label: "Address Lookup", icon: "search" },
   { id: "tx-inspector", label: "Tx Inspector", icon: "activity" },
   { id: "account-explorer", label: "Account Explorer", icon: "database" },
-  { id: "spl-token", label: "SPL Token Tools", icon: "coin" },
-  { id: "pda-generator", label: "PDA Generator", icon: "key" },
-  { id: "data-decoder", label: "Data Decoder", icon: "code" },
   { id: "cli-generator", label: "CLI Generator", icon: "cli" },
 ];
 
-export const TOOL_ITEMS: ToolItem[] = [
-  {
-    id: "address-lookup",
-    title: "Address Lookup",
-    description: "Look up any Solana address",
-    icon: "search",
-  },
-  {
-    id: "tx-inspector",
-    title: "Transaction Inspector",
-    description: "Decode and analyze transactions",
-    icon: "activity",
-  },
-  {
-    id: "account-explorer",
-    title: "Account Explorer",
-    description: "Explore account data and layout",
-    icon: "database",
-  },
-  {
-    id: "spl-token",
-    title: "SPL Token Tools",
-    description: "Mint, ATA, and token utilities",
-    icon: "coin",
-  },
+export const LIVE_TOOL_ITEMS: ToolItem[] = [
   {
     id: "pda-generator",
     title: "PDA Generator",
@@ -56,12 +32,20 @@ export const TOOL_ITEMS: ToolItem[] = [
     icon: "key",
   },
   {
+    id: "spl-token",
+    title: "ATA Generator",
+    description: "Associated token address for wallet + mint",
+    icon: "coin",
+  },
+  {
     id: "data-decoder",
-    title: "Data Decoder",
-    description: "Decode Borsh, Anchor, and raw bytes",
+    title: "Data Playground",
+    description: "Account, instruction, tx & event decoders",
     icon: "code",
   },
 ];
+
+export const TOOL_ITEMS: ToolItem[] = LIVE_TOOL_ITEMS;
 
 export const ASCII_LOGO = `
  ███████╗ ██████╗ ██╗     ██╗     ███████╗███╗   ██╗███████╗
@@ -76,9 +60,6 @@ export const COMING_SOON_MODULES: Record<string, string> = {
   "address-lookup": "Address Lookup",
   "tx-inspector": "Transaction Inspector",
   "account-explorer": "Account Explorer",
-  "spl-token": "SPL Token Tools",
-  "pda-generator": "PDA Generator",
-  "data-decoder": "Data Decoder",
   "cli-generator": "CLI Generator",
 };
 
