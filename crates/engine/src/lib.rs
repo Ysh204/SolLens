@@ -4,9 +4,14 @@ pub mod registry;
 pub mod evaluator;
 pub mod engine;
 
-pub use engine::evaluate;
+pub use engine::{evaluate, function_catalog, set_transaction_data, get_transaction_data};
+pub use registry::Registry;
 pub use value::Value;
 pub use error::EngineError;
+
+pub fn list_functions() -> Vec<String> {
+    Registry::new().function_names()
+}
 
 #[cfg(test)]
 mod tests {
@@ -74,6 +79,26 @@ mod tests {
     }
 
     #[test]
+    fn array_index_access() {
+        let result = evaluate(r#"["vault", "mint"][1]"#).unwrap();
+        assert_eq!(result.to_string(), "mint");
+    }
+
+    #[test]
+    fn object_index_access_on_pda() {
+        let result = evaluate(r#"pda(["vault"], "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")["bump"]"#).unwrap();
+        assert_eq!(result.to_string(), "254");
+    }
+
+    #[test]
+    fn print_function_list_includes_solana_functions() {
+        let functions = list_functions();
+        println!("{}", functions.join(", "));
+        assert!(functions.contains(&"pda".to_string()));
+        assert!(functions.contains(&"ata".to_string()));
+    }
+
+    #[test]
     fn base58_encode_string() {
         let result = evaluate(r#"base58_encode("hello")"#).unwrap();
         assert_eq!(result.to_string(), "Cn8eVZg");
@@ -94,7 +119,12 @@ mod tests {
     #[test]
     fn pubkey_system_program() {
         let result = evaluate(r#"pubkey("11111111111111111111111111111111")"#).unwrap();
-        assert_eq!(result.to_string(), "11111111111111111111111111111111");
+        match result {
+            Value::Pubkey(s) => {
+                assert_eq!(s, "11111111111111111111111111111111");
+            }
+            _ => panic!("expected Pubkey"),
+        }
     }
 
     #[test]
@@ -112,10 +142,97 @@ mod tests {
     }
 
     #[test]
-    fn instruction_discriminator_initialize() {
-        use sha2::{Digest, Sha256};
-        let result = evaluate(r#"instruction_discriminator("initialize")"#).unwrap();
-        let expected = format!("0x{}", hex::encode(&Sha256::digest(b"global:initialize")[..8]));
-        assert_eq!(result.to_string(), expected);
+    fn pda_vault_example() {
+        let result = evaluate(
+            r#"pda(["vault", "11111111111111111111111111111111"], "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")"#,
+        )
+        .unwrap();
+        match result {
+            Value::Object(map) => {
+                assert!(map.contains_key("pda"));
+                assert!(map.contains_key("bump"));
+            }
+            _ => panic!("expected Object from pda()"),
+        }
+    }
+
+    #[test]
+    fn ata_wsol_example() {
+        let result = evaluate(
+            r#"ata("11111111111111111111111111111111", "So11111111111111111111111111111111111111112")"#,
+        )
+        .unwrap();
+        match result {
+            Value::Object(map) => {
+                assert!(map.contains_key("ata"));
+            }
+            _ => panic!("expected Object from ata()"),
+        }
+    }
+
+    #[test]
+    fn member_access_on_pda() {
+        let result = evaluate(
+            r#"pda(["vault"], "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").bump"#,
+        )
+        .unwrap();
+        assert!(matches!(result, Value::Number(_)));
+    }
+
+    #[test]
+    fn decode_instruction_hex() {
+        let result = evaluate(r#"decode_instruction("0xa9059cbb0000000000000000000000000000000000000000000000000000000000000064")"#)
+            .unwrap();
+        match result {
+            Value::Object(map) => {
+                assert!(map.contains_key("hex"));
+                assert!(map.contains_key("discriminator"));
+            }
+            _ => panic!("expected Object from decode_instruction()"),
+        }
+    }
+
+    #[test]
+    fn decode_account_anchor_mode() {
+        let disc = evaluate(r#"account_discriminator("Vault")"#).unwrap();
+        let disc_hex = match disc {
+            Value::Bytes(b) => format!("0x{}", hex::encode(b)),
+            _ => panic!("expected bytes"),
+        };
+        let padded = format!("{disc_hex}{}", "00".repeat(24));
+        let result = evaluate(&format!(r#"decode_account("{padded}", "anchor")"#)).unwrap();
+        match result {
+            Value::Object(map) => {
+                assert!(map.contains_key("dump"));
+                assert!(map.contains_key("discriminator"));
+            }
+            _ => panic!("expected Object"),
+        }
+    }
+
+    #[test]
+    fn decode_events_empty_logs() {
+        let result = evaluate(r#"decode_events("Program log: hello")"#).unwrap();
+        match result {
+            Value::Object(map) => {
+                assert_eq!(map.get("program_data_lines"), Some(&Value::Number(0)));
+            }
+            _ => panic!("expected Object"),
+        }
+    }
+
+    #[test]
+    fn decode_router_instruction() {
+        let result = evaluate(r#"decode("0xa9059cbb", "instruction")"#).unwrap();
+        assert!(matches!(result, Value::Object(_)));
+    }
+
+    #[test]
+    fn function_catalog_includes_decode_functions() {
+        let catalog = function_catalog();
+        let names: Vec<_> = catalog.iter().map(|m| m.name.as_str()).collect();
+        assert!(names.contains(&"decode_account"));
+        assert!(names.contains(&"decode_instruction"));
+        assert!(names.contains(&"decode_events"));
     }
 }

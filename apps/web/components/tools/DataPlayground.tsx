@@ -252,6 +252,18 @@ function TransactionDecoderTab() {
     setError(null);
     try {
       const decoded = await decodeTransaction(signature);
+      for (const ix of decoded.instructions) {
+        if (ix.type === "partial" && ix.dataHex) {
+          try {
+            const engineDecoded = await decodeInstructionData(ix.dataHex);
+            if (engineDecoded.discriminator?.possibleInstruction) {
+              ix.name = engineDecoded.discriminator.possibleInstruction;
+            }
+          } catch (e) {
+            console.error("Failed to decode instruction via engine:", e);
+          }
+        }
+      }
       setResult(decoded);
     } catch (err) {
       setResult(null);

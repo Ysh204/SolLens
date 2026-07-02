@@ -47,6 +47,35 @@ export const EXPRESSION_GROUPS: ExpressionGroup[] = [
     examples: [
       { label: "Lamports", expr: "lamports(1.5)" },
       { label: "Rent", expr: "rent(128)" },
+      {
+        label: "PDA",
+        expr: 'pda(["vault", "11111111111111111111111111111111"], "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")',
+      },
+      {
+        label: "PDA bump",
+        expr: 'pda(["vault"], "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").bump',
+      },
+      {
+        label: "ATA",
+        expr: 'ata("11111111111111111111111111111111", "So11111111111111111111111111111111111111112")',
+      },
+    ],
+  },
+  {
+    label: "Decode",
+    examples: [
+      {
+        label: "Instruction",
+        expr: 'decode_instruction("0xa9059cbb0000000000000000000000000000000000000000000000000000000000000064")',
+      },
+      {
+        label: "Account (Anchor)",
+        expr: 'decode("0x0000000000000000000000000000000000000000000000000000000000000000", "account", "anchor")',
+      },
+      {
+        label: "Hex dump",
+        expr: 'hex_dump(sha256("hello"))',
+      },
     ],
   },
   {
@@ -80,6 +109,13 @@ export const ENGINE_FUNCTIONS = [
   { name: "sha256", sig: 'sha256("text")', desc: "SHA-256 hash → bytes" },
   { name: "lamports", sig: "lamports(1.5)", desc: "SOL → lamports (u64)" },
   { name: "rent", sig: "rent(128)", desc: "Rent-exempt minimum lamports" },
+  { name: "pda", sig: 'pda(["vault"], "program")', desc: "Derive program address" },
+  { name: "ata", sig: 'ata("wallet", "mint")', desc: "Associated token account" },
+  { name: "decode_account", sig: 'decode_account("…", "anchor")', desc: "Decode account bytes" },
+  { name: "decode_instruction", sig: 'decode_instruction("0x…")', desc: "Decode instruction data" },
+  { name: "decode_events", sig: "decode_events(logs)", desc: "Parse Anchor event logs" },
+  { name: "decode", sig: 'decode("…", "instruction")', desc: "Unified decode router" },
+  { name: "hex_dump", sig: "hex_dump(bytes)", desc: "Hex dump with ASCII" },
 ] as const;
 
 export const HELP_TEXT = `Universal Expression Engine (Rust WASM)
@@ -102,6 +138,16 @@ Anchor Discriminators:
 
 Solana & Crypto:
   sha256("text")    lamports(1.5)    rent(128)
+  pda(["vault"], "program")         Derive PDA
+  ata("wallet", "mint")             Associated token account
+  pda([...], "program").bump         Property access
+
+Decode (Rust WASM):
+  decode_account("…", "anchor")    Account bytes → structured view
+  decode_instruction("0x…")          Instruction discriminator + args
+  decode_events(logs)                Anchor Program data: lines
+  decode("…", "instruction")         Unified router
+  hex_dump(sha256("hello"))          Hex dump with ASCII
 
 Arithmetic:
   1 + 2    lamports(1.5) * 2    rent(128) + 5000

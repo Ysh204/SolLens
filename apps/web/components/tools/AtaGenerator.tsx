@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { deriveAta, type AtaResult } from "../../lib/solana/ata";
+import { useWasm } from "../../hooks/useWasm";
+import { buildAtaExpression, deriveAtaFromEngine, type AtaResult } from "../../lib/solana/ata";
 import { bytesToHex } from "../../lib/solana/bytes";
 import {
   DecodeButton,
@@ -16,6 +17,7 @@ const EXAMPLE_WALLET = "11111111111111111111111111111111";
 const EXAMPLE_MINT = "So11111111111111111111111111111111111111112";
 
 export function AtaGenerator() {
+  const { evaluate, isReady, loadError } = useWasm();
   const [wallet, setWallet] = useState(EXAMPLE_WALLET);
   const [mint, setMint] = useState(EXAMPLE_MINT);
   const [tokenProgram, setTokenProgram] = useState("");
@@ -23,14 +25,30 @@ export function AtaGenerator() {
   const [error, setError] = useState<string | null>(null);
 
   const expressionPreview = useMemo(
-    () => `ata(${wallet.trim() || "wallet"}, ${mint.trim() || "mint"})`,
-    [wallet, mint],
+    () => buildAtaExpression(wallet || "wallet", mint || "mint", tokenProgram || undefined),
+    [wallet, mint, tokenProgram],
   );
 
   function handleDerive() {
     setError(null);
+    if (!isReady) {
+      setError(loadError ?? "Engine not ready");
+      return;
+    }
     try {
-      setResult(deriveAta(wallet, mint, tokenProgram || undefined));
+      setResult(
+        deriveAtaFromEngine(
+          (expr) => {
+            const { result, error: evalError } = evaluate(expr);
+            if (evalError) throw new Error(evalError.message);
+            if (!result) throw new Error("No result from engine");
+            return result;
+          },
+          wallet,
+          mint,
+          tokenProgram || undefined,
+        ),
+      );
     } catch (err) {
       setResult(null);
       setError(err instanceof Error ? err.message : "Failed to derive ATA");

@@ -1,5 +1,5 @@
-import { PublicKey } from "@solana/web3.js";
-import { bytesToHex, hexToBytes, parsePubkey } from "./bytes";
+import type { SuccessValue } from "../types";
+import { EngineError, unwrapArray, unwrapBytes, unwrapNumber, unwrapObject, unwrapString } from "../engine/values";
 
 export type SeedKind = "utf8" | "pubkey" | "bytes";
 
@@ -17,96 +17,81 @@ export interface PdaResult {
   bytes: Uint8Array;
 }
 
-function parseSeed(raw: string): ParsedSeed {
-  const trimmed = raw.trim();
-  if (!trimmed) throw new Error("Seed cannot be empty");
+function normalizeSeedsExpression(seedsInput: string): string {
+  const trimmed = seedsInput.trim();
+  if (!trimmed) return "[]";
+  if (trimmed.startsWith("[")) return trimmed;
 
-  if (/^(0x)?[0-9a-fA-F\s]+$/.test(trimmed) && trimmed.length > 2) {
-    const bytes = hexToBytes(trimmed);
-    return {
-      raw: trimmed,
-      kind: "bytes",
-      bytes,
-      label: `bytes(${bytes.length})`,
-    };
-  }
-
-  if (trimmed.length >= 32 && trimmed.length <= 44) {
-    try {
-      const pubkey = parsePubkey(trimmed);
-      return {
-        raw: trimmed,
-        kind: "pubkey",
-        bytes: pubkey.toBytes(),
-        label: "pubkey",
-      };
-    } catch {
-      // fall through to utf8
-    }
-  }
-
-  const bytes = new TextEncoder().encode(trimmed);
-  return {
-    raw: trimmed,
-    kind: "utf8",
-    bytes,
-    label: `"${trimmed}"`,
-  };
-}
-
-export function parseSeedsInput(input: string): ParsedSeed[] {
-  const trimmed = input.trim();
-  if (!trimmed) return [];
-
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(trimmed) as unknown;
-      if (!Array.isArray(parsed)) throw new Error("Seeds JSON must be an array");
-      return parsed.map((item) => parseSeed(String(item)));
-    } catch (err) {
-      if (err instanceof SyntaxError) {
-        throw new Error("Invalid JSON array for seeds");
-      }
-      throw err;
-    }
-  }
-
-  return trimmed
+  const items = trimmed
     .split(/[\n,]+/)
     .map((s) => s.trim())
     .filter(Boolean)
-    .map(parseSeed);
+    .map((s) => JSON.stringify(s));
+
+  return `[${items.join(", ")}]`;
 }
 
-export function derivePda(seedsInput: string, programIdInput: string): PdaResult {
-  const seeds = parseSeedsInput(seedsInput);
-  if (seeds.length === 0) throw new Error("At least one seed is required");
+export function buildPdaExpression(seedsInput: string, programIdInput: string): string {
+  const seedsExpr = normalizeSeedsExpression(seedsInput);
+  const programId = programIdInput.trim();
+  return `pda(${seedsExpr}, ${JSON.stringify(programId)})`;
+}
 
-  const programId = parsePubkey(programIdInput);
-  const seedBuffers = seeds.map((s) => Buffer.from(s.bytes));
+function pickField(obj: Record<string, SuccessValue>, ...names: string[]): SuccessValue {
+  for (const name of names) {
+    const value = obj[name];
+    if (value !== undefined) {
+      return value;
+    }
+  }
+  throw new Error(`PDA result is missing fields: ${names.join(" / ")}`);
+}
 
-  const [pda, bump] = PublicKey.findProgramAddressSync(seedBuffers, programId);
+export function pdaResultFromEngine(result: SuccessValue): PdaResult {
+  const obj = unwrapObject(result);
+  const seeds = unwrapArray(pickField(obj, "seeds", "seed_objects", "seedObjects")).map((seedVal) => {
+    const seed = unwrapObject(seedVal);
+    const kind = unwrapString(seed.kind) as SeedKind;
+    const label = unwrapString(seed.label);
+    const bytes = unwrapBytes(seed.bytes);
+    return {
+      raw: kind === "utf8" ? label.replace(/^"|"$/g, "") : label,
+      kind,
+      bytes,
+      label,
+    };
+  });
 
   return {
-    pda: pda.toBase58(),
-    bump,
+    pda: unwrapString(pickField(obj, "pda")),
+    bump: unwrapNumber(pickField(obj, "bump")),
     seeds,
-    bytes: pda.toBytes(),
+    bytes: unwrapBytes(pickField(obj, "bytes")),
   };
+}
+
+export function derivePdaFromEngine(
+  evaluate: (input: string) => SuccessValue,
+  seedsInput: string,
+  programIdInput: string,
+): PdaResult {
+  const expr = buildPdaExpression(seedsInput, programIdInput);
+  const result = evaluate(expr);
+  return pdaResultFromEngine(result);
 }
 
 export function formatSeedBytes(seed: ParsedSeed): string {
   if (seed.kind === "pubkey") {
-    try {
-      return new PublicKey(seed.bytes).toBase58();
-    } catch {
-      return bytesToHex(seed.bytes);
-    }
+    return seed.label;
   }
   if (seed.kind === "utf8") {
-    return `"${seed.raw}" → ${bytesToHex(seed.bytes)}`;
+    return `${seed.label} → 0x${Array.from(seed.bytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")}`;
   }
-  return bytesToHex(seed.bytes);
+  return `0x${Array.from(seed.bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")}`;
 }
 
 /** Visual chain: program + seeds → PDA */
@@ -158,9 +143,5 @@ export function tryParseSeedsJson(input: string): string[] | null {
 }
 
 export function encodeSeedPreview(raw: string): string {
-  try {
-    return formatSeedBytes(parseSeed(raw));
-  } catch {
-    return raw;
-  }
+  return raw;
 }

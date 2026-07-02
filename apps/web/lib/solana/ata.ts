@@ -1,6 +1,5 @@
-import { PublicKey } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { parsePubkey } from "./bytes";
+import type { SuccessValue } from "../types";
+import { unwrapBool, unwrapBytes, unwrapObject, unwrapString } from "../engine/values";
 
 export interface AtaResult {
   ata: string;
@@ -12,26 +11,53 @@ export interface AtaResult {
   isOnCurve: boolean;
 }
 
-export function deriveAta(
+export function buildAtaExpression(
+  walletInput: string,
+  mintInput: string,
+  tokenProgramInput?: string,
+): string {
+  const wallet = walletInput.trim();
+  const mint = mintInput.trim();
+  const tokenProgram = tokenProgramInput?.trim();
+
+  if (tokenProgram) {
+    return `ata(${JSON.stringify(wallet)}, ${JSON.stringify(mint)}, ${JSON.stringify(tokenProgram)})`;
+  }
+  return `ata(${JSON.stringify(wallet)}, ${JSON.stringify(mint)})`;
+}
+
+function pickField(obj: Record<string, SuccessValue>, ...names: string[]): SuccessValue {
+  for (const name of names) {
+    const value = obj[name];
+    if (value !== undefined) {
+      return value;
+    }
+  }
+  throw new Error(`ATA result is missing fields: ${names.join(" / ")}`);
+}
+
+export function ataResultFromEngine(result: SuccessValue): AtaResult {
+  const obj = unwrapObject(result);
+  return {
+    ata: unwrapString(pickField(obj, "ata")),
+    wallet: unwrapString(pickField(obj, "wallet")),
+    mint: unwrapString(pickField(obj, "mint")),
+    tokenProgram: unwrapString(pickField(obj, "token_program", "tokenProgram")),
+    associatedTokenProgram: unwrapString(
+      pickField(obj, "associated_token_program", "associatedTokenProgram"),
+    ),
+    bytes: unwrapBytes(pickField(obj, "bytes")),
+    isOnCurve: unwrapBool(pickField(obj, "is_on_curve", "isOnCurve")),
+  };
+}
+
+export function deriveAtaFromEngine(
+  evaluate: (input: string) => SuccessValue,
   walletInput: string,
   mintInput: string,
   tokenProgramInput?: string,
 ): AtaResult {
-  const wallet = parsePubkey(walletInput);
-  const mint = parsePubkey(mintInput);
-  const tokenProgram = tokenProgramInput
-    ? parsePubkey(tokenProgramInput)
-    : TOKEN_PROGRAM_ID;
-
-  const ata = getAssociatedTokenAddressSync(mint, wallet, false, tokenProgram, ASSOCIATED_TOKEN_PROGRAM_ID);
-
-  return {
-    ata: ata.toBase58(),
-    wallet: wallet.toBase58(),
-    mint: mint.toBase58(),
-    tokenProgram: tokenProgram.toBase58(),
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID.toBase58(),
-    bytes: ata.toBytes(),
-    isOnCurve: PublicKey.isOnCurve(ata.toBytes()),
-  };
+  const expr = buildAtaExpression(walletInput, mintInput, tokenProgramInput);
+  const result = evaluate(expr);
+  return ataResultFromEngine(result);
 }
