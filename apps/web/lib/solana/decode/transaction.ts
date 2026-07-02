@@ -110,7 +110,7 @@ export async function decodeTransaction(signature: string): Promise<TransactionD
   return {
     signature: trimmed,
     slot: tx.slot,
-    blockTime: tx.blockTime,
+    blockTime: tx.blockTime ?? null,
     fee: tx.meta?.fee ?? 0,
     computeUnits: extractComputeUnits(tx.meta),
     status: tx.meta?.err ? "failed" : "success",
