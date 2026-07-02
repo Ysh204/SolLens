@@ -60,7 +60,9 @@ export function useWasm() {
     try {
       // Find all transaction("...") or transaction('...') signatures
       const matches = input.matchAll(/transaction\s*\(\s*["']([^"']+)["']\s*\)/g);
-      const signatures = Array.from(matches).map((m) => m[1]);
+      const signatures = Array.from(matches)
+        .map((m) => m[1])
+        .filter((sig): sig is string => Boolean(sig));
 
       if (signatures.length > 0) {
         const { decodeTransaction } = await import("../lib/solana/decode/transaction");

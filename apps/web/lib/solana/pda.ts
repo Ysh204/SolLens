@@ -51,9 +51,9 @@ export function pdaResultFromEngine(result: SuccessValue): PdaResult {
   const obj = unwrapObject(result);
   const seeds = unwrapArray(pickField(obj, "seeds", "seed_objects", "seedObjects")).map((seedVal) => {
     const seed = unwrapObject(seedVal);
-    const kind = unwrapString(seed.kind) as SeedKind;
-    const label = unwrapString(seed.label);
-    const bytes = unwrapBytes(seed.bytes);
+    const kind = unwrapString(pickField(seed, "kind", "seed_kind", "seedKind")) as SeedKind;
+    const label = unwrapString(pickField(seed, "label", "seed_label", "seedLabel"));
+    const bytes = unwrapBytes(pickField(seed, "bytes", "data"));
     return {
       raw: kind === "utf8" ? label.replace(/^"|"$/g, "") : label,
       kind,
