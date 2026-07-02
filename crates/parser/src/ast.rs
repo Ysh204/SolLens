@@ -11,6 +11,15 @@ pub enum ExprKind {
         function: String,
         args: Vec<Expr>,
     },
+    Array(Vec<Expr>),
+    Member {
+        object: Box<Expr>,
+        property: String,
+    },
+    Index {
+        object: Box<Expr>,
+        index: Box<Expr>,
+    },
     Binary {
         op: BinOp,
         left: Box<Expr>,

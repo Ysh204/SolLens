@@ -1,24 +1,25 @@
 "use client";
 
 import type { ModuleId } from "../lib/types";
-import { TOOL_ITEMS } from "../lib/constants";
+import { LIVE_TOOL_ITEMS } from "../lib/constants";
 import { ChevronRightIcon, NavIcon } from "./icons";
 import { NetworkStatus } from "./NetworkStatus";
 
 interface RightPanelProps {
+  activeModule: ModuleId;
   onToolSelect: (id: ModuleId) => void;
 }
 
-export function RightPanel({ onToolSelect }: RightPanelProps) {
+export function RightPanel({ activeModule, onToolSelect }: RightPanelProps) {
   return (
     <aside className="right-panel">
-      <span className="sidebar-label">Coming Soon</span>
+      <span className="sidebar-label">Tools</span>
       <div className="tool-cards">
-        {TOOL_ITEMS.map((tool) => (
+        {LIVE_TOOL_ITEMS.map((tool) => (
           <button
             key={tool.id}
             type="button"
-            className="tool-card tool-card--soon"
+            className={`tool-card ${activeModule === tool.id ? "tool-card--active" : ""}`}
             onClick={() => onToolSelect(tool.id)}
           >
             <div className="tool-card-icon">

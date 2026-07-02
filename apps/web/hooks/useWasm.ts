@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { Diagnostic, SuccessValue } from "../lib/types";
+import { formatEngineResult, type FunctionMetadata } from "../lib/engine/client";
 
 interface WasmModule {
   evaluate: (input: string) => SuccessValue;
+  list_functions: () => string[];
+  function_catalog: () => FunctionMetadata[];
+  set_transaction_data?: (sig: string, val: SuccessValue) => void;
 }
 
 export function useWasm() {
@@ -43,22 +47,63 @@ export function useWasm() {
     }
   }
 
-  return { wasm, isLoading, loadError: error, evaluate, isReady: !!wasm && !isLoading };
-}
+  async function evaluateAsync(input: string): Promise<{ result?: SuccessValue; error?: Diagnostic }> {
+    if (!wasm) {
+      return {
+        error: {
+          severity: "Error",
+          message: "Engine not ready",
+          span: { start: 0, end: 0 },
+        },
+      };
+    }
+    try {
+      // Find all transaction("...") or transaction('...') signatures
+      const matches = input.matchAll(/transaction\s*\(\s*["']([^"']+)["']\s*\)/g);
+      const signatures = Array.from(matches)
+        .map((m) => m[1])
+        .filter((sig): sig is string => Boolean(sig));
 
-export function formatValue(res: SuccessValue): string {
-  if (res.type === "Bytes" && Array.isArray(res.value)) {
-    return (
-      "0x" +
-      (res.value as number[]).map((b) => b.toString(16).padStart(2, "0")).join("")
-    );
+      if (signatures.length > 0) {
+        const { decodeTransaction } = await import("../lib/solana/decode/transaction");
+        const { wrapJsonToEngineValue } = await import("../lib/engine/values");
+        
+        for (const sig of signatures) {
+          const txData = await decodeTransaction(sig);
+          const engineVal = wrapJsonToEngineValue(txData);
+          if (wasm.set_transaction_data) {
+            wasm.set_transaction_data(sig, engineVal);
+          }
+        }
+      }
+
+      const result = wasm.evaluate(input);
+      return { result };
+    } catch (err) {
+      return { error: err as Diagnostic };
+    }
   }
-  if (res.type === "Number" && typeof res.value === "number") {
-    return res.value.toLocaleString("en-US");
+
+  function listFunctions(): string[] {
+    return wasm?.list_functions() ?? [];
   }
-  return String(res.value);
+
+  function functionCatalog(): FunctionMetadata[] {
+    return wasm?.function_catalog() ?? [];
+  }
+
+  return {
+    wasm,
+    isLoading,
+    loadError: error,
+    evaluate,
+    evaluateAsync,
+    listFunctions,
+    functionCatalog,
+    isReady: !!wasm && !isLoading,
+  };
 }
 
 export function formatResult(result: SuccessValue): string {
-  return `[${result.type}] ${formatValue(result)}`;
+  return formatEngineResult(result);
 }
